@@ -1,0 +1,32 @@
+# Binary executables
+/bin/
+/obj/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*~
+.DS_Store
+
+# Test binary, build cache, and coverage profile
+*.test
+*.out
+*.cover
+.coverprofile
+
+# Cache files
+*.cache
+
+# GoLand specific files
+*.iml
+
+# User-specific files
+*.log
