@@ -77,6 +77,7 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 }
 
 func enableCors(w *http.ResponseWriter) {
+	//For now enabling all
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
