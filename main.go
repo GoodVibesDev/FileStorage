@@ -91,5 +91,6 @@ func setupRoutes() {
 }
 
 func main() {
+	os.Mkdir("files", os.ModePerm)
 	setupRoutes()
 }
