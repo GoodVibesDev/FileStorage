@@ -15,6 +15,11 @@ import (
 func uploadFile(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
+	if r.ContentLength > 45<<20 {
+		http.Error(w, "File is too large", http.StatusRequestEntityTooLarge)
+		return
+	}
+
 	//45mb - max uploadedFile size
 	err := r.ParseMultipartForm(45 << 20)
 
