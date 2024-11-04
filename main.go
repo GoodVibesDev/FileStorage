@@ -15,6 +15,9 @@ import (
 func uploadFile(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
+	//added to enable sending process monitoring
+	w.WriteHeader(http.StatusOK)
+
 	if r.ContentLength > 45<<20 {
 		http.Error(w, "File is too large", http.StatusRequestEntityTooLarge)
 		return
