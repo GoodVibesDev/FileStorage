@@ -15,12 +15,11 @@ import (
 func uploadFile(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
-	//32mb - max uploadedFile size
-	err := r.ParseMultipartForm(50 << 20)
+	//45mb - max uploadedFile size
+	err := r.ParseMultipartForm(45 << 20)
 
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
