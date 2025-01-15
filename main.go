@@ -19,14 +19,14 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	//added to enable sending process monitoring
 	w.WriteHeader(http.StatusOK)
 
-	// If file size > 45Mb, then throw error
-	if r.ContentLength > 45<<20 {
+	maxSize := int64(45 << 20)	// 45mb - max uploadedFile size
+
+	if r.ContentLength > maxSize {
 		http.Error(w, "File is too large", http.StatusRequestEntityTooLarge)
 		return
 	}
 
-	//45mb - max uploadedFile size
-	err := r.ParseMultipartForm(45 << 20)
+	err := r.ParseMultipartForm(maxSize)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -61,10 +61,60 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(filepath.Base(newFile.Name())))
 }
 
+// Reads file from url in request and saves it to storage
+func uploadFileFromUrl(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+
+	defer r.Body.Close()
+
+	// get file url from request body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+	  fmt.Println(err)
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  defer r.Body.Close()
+
+  fileUrl := string(body)
+
+	// get filename from url
+	fileName := filepath.Base(fileUrl)
+
+	// creating file with unix timestamp in name
+	newFile, err := os.Create("files/" + strconv.FormatInt(time.Now().Unix(), 10) + "_" + fileName)
+	defer newFile.Close()
+
+	if err != nil {
+	  fmt.Println(err)
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  // download file from url
+  resp, err := http.Get(fileUrl)
+  if err != nil {
+      fmt.Println(err)
+      http.Error(w, err.Error(), http.StatusInternalServerError)
+      return
+  }
+
+  // save downloaded file to storage
+  _, err = io.Copy(newFile, resp.Body)
+  if err != nil {
+    fmt.Println(err)
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+	w.Write([]byte(filepath.Base(newFile.Name())))
+}
+
 func downloadFile(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
-	//Getting path variable to find the file
+	// Getting path variable to find the file
 	vars := mux.Vars(r)
 	storageFileName := vars["fileName"]
 
@@ -81,10 +131,10 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 		contentType = "application/octet-stream" // Fallback for unknown types
 	}
 
-	//Remove folders from path and timestamp
+	// Remove folders from path and timestamp
 	fileName := getFileName(file.Name())
 
-	w.Header().Set("Content-Disposition", "attachment; filename="+fileName+"\"")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
 	w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
 	w.Header().Set("Content-Type", contentType)
 
@@ -110,6 +160,7 @@ func setupRoutes() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/upload", uploadFile)
+	r.HandleFunc("/uploadFromUrl", uploadFileFromUrl)
 	r.HandleFunc("/download/{fileName}", downloadFile)
 
 	http.ListenAndServe(":8085", r)
