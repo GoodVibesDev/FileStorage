@@ -1,6 +1,7 @@
 package main
 
 import (
+  "encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"io"
@@ -12,6 +13,11 @@ import (
 	"strings"
 	"time"
 )
+
+type UrlFileUploadData struct {
+  Url string `json:"url"`
+  FileName string `json:"fileName"`
+}
 
 func uploadFile(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
@@ -65,22 +71,20 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 func uploadFileFromUrl(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
-	defer r.Body.Close()
-
-	// get file url from request body
-	body, err := io.ReadAll(r.Body)
+  // Create a decoder for JSON
+  decoder := json.NewDecoder(r.Body)
+  var data UrlFileUploadData
+  err := decoder.Decode(&data)
 	if err != nil {
 	  fmt.Println(err)
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
 
-  defer r.Body.Close()
+	defer r.Body.Close()
 
-  fileUrl := string(body)
-
-	// get filename from url
-	fileName := filepath.Base(fileUrl)
+  fileUrl := data.Url
+	fileName := data.FileName
 
 	// creating file with unix timestamp in name
 	newFile, err := os.Create("files/" + strconv.FormatInt(time.Now().Unix(), 10) + "_" + fileName)
