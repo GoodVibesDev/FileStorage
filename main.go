@@ -96,19 +96,51 @@ func uploadFileFromUrl(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  // download file from url
+  // Download file from url
   resp, err := http.Get(fileUrl)
-  if err != nil {
-      fmt.Println(err)
-      http.Error(w, err.Error(), http.StatusInternalServerError)
-      return
-  }
-
-  // save downloaded file to storage
-  _, err = io.Copy(newFile, resp.Body)
   if err != nil {
     fmt.Println(err)
     http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  defer resp.Body.Close()
+
+  // Detect image type
+  _, format, err := image.DecodeConfig(resp.Body)
+  if err != nil {
+    fmt.Println(err)
+    http.Error(w, "Invalid image format", http.StatusBadRequest)
+    return
+  }
+
+  // Reset the file reader to the beginning
+  resp.Body = io.NopCloser(io.TeeReader(resp.Body, &bytes.Buffer{}))
+
+  // Decode the image
+  img, _, err := image.Decode(resp.Body)
+  if err != nil {
+    fmt.Println(err)
+    http.Error(w, "Error decoding image", http.StatusInternalServerError)
+    return
+  }
+
+  // Compress the image based on format
+  switch format {
+  case "jpeg":
+    // Compress as JPEG with quality 75
+    err = jpeg.Encode(newFile, img, &jpeg.Options{Quality: 75})
+  case "png":
+    // Compress as PNG
+    err = png.Encode(newFile, img)
+  default:
+    // If not JPEG or PNG, copy the original file
+    resp.Body = io.NopCloser(io.TeeReader(resp.Body, &bytes.Buffer{}))
+    _, err = io.Copy(newFile, resp.Body)
+  }
+
+  if err != nil {
+    fmt.Println(err)
+    http.Error(w, "Error compressing image", http.StatusInternalServerError)
     return
   }
 
