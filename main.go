@@ -2,8 +2,14 @@ package main
 
 import (
   "encoding/json"
+    "bytes"
 	"fmt"
 	"github.com/gorilla/mux"
+	"image"
+	"image/jpeg"
+	_ "image/jpeg"
+	"image/png"
+	_ "image/png"
 	"io"
 	"mime"
 	"net/http"
@@ -105,19 +111,25 @@ func uploadFileFromUrl(w http.ResponseWriter, r *http.Request) {
   }
   defer resp.Body.Close()
 
+  var buf bytes.Buffer
+  teeReader := io.TeeReader(resp.Body, &buf)
+  body, err := io.ReadAll(teeReader)
+  if err != nil {
+    fmt.Println(err)
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
   // Detect image type
-  _, format, err := image.DecodeConfig(resp.Body)
+  _, format, err := image.DecodeConfig(bytes.NewReader(body))
   if err != nil {
     fmt.Println(err)
     http.Error(w, "Invalid image format", http.StatusBadRequest)
     return
   }
 
-  // Reset the file reader to the beginning
-  resp.Body = io.NopCloser(io.TeeReader(resp.Body, &bytes.Buffer{}))
-
   // Decode the image
-  img, _, err := image.Decode(resp.Body)
+  img, _, err := image.Decode(bytes.NewReader(body))
   if err != nil {
     fmt.Println(err)
     http.Error(w, "Error decoding image", http.StatusInternalServerError)
@@ -127,8 +139,7 @@ func uploadFileFromUrl(w http.ResponseWriter, r *http.Request) {
   // Compress the image based on format
   switch format {
   case "jpeg":
-    // Compress as JPEG with quality 75
-    err = jpeg.Encode(newFile, img, &jpeg.Options{Quality: 75})
+    err = jpeg.Encode(newFile, img, &jpeg.Options{Quality: 30})
   case "png":
     // Compress as PNG
     err = png.Encode(newFile, img)
