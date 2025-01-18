@@ -139,7 +139,7 @@ func uploadFileFromUrl(w http.ResponseWriter, r *http.Request) {
   // Compress the image based on format
   switch format {
   case "jpeg":
-    err = jpeg.Encode(newFile, img, &jpeg.Options{Quality: 30})
+    err = jpeg.Encode(newFile, img, &jpeg.Options{Quality: 75})
   case "png":
     // Compress as PNG
     err = png.Encode(newFile, img)
