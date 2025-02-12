@@ -92,8 +92,15 @@ func uploadFileFromUrl(w http.ResponseWriter, r *http.Request) {
   fileUrl := data.Url
 	fileName := data.FileName
 
+  storeFileName := ""
+	if r.URL.Query().Get("no_timestamp") == "true" {
+	  storeFileName = "files/" + fileName
+	} else {
+	  storeFileName = "files/" + strconv.FormatInt(time.Now().Unix(), 10) + "_" + fileName
+	}
+
 	// creating file with unix timestamp in name
-	newFile, err := os.Create("files/" + strconv.FormatInt(time.Now().Unix(), 10) + "_" + fileName)
+	newFile, err := os.Create(storeFileName)
 	defer newFile.Close()
 
 	if err != nil {
