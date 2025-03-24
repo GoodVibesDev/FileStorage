@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"net/url"
 )
 
 type UrlFileUploadData struct {
@@ -188,7 +189,8 @@ func downloadFile(w http.ResponseWriter, r *http.Request) {
 	// Remove folders from path and timestamp
 	fileName := getFileName(file.Name())
 
-	w.Header().Set("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
+    encodedFileName := url.PathEscape(fileName)
+	w.Header().Set("Content-Disposition", "attachment; filename*=UTF-8''"+encodedFileName)
 	w.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
 	w.Header().Set("Content-Type", contentType)
 
